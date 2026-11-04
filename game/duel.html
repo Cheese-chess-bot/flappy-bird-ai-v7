@@ -1,0 +1,550 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Floppy Bird — Human vs Bot</title>
+
+<style>
+:root { color-scheme: dark; }
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #0b192c;
+  color: #f4f6f9;
+  font-family: system-ui, Segoe UI, Arial, sans-serif;
+}
+
+.shell {
+  max-width: 920px;
+  margin: auto;
+  padding: 18px 12px 30px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+}
+
+h1 {
+  font-size: 23px;
+  margin: 0;
+}
+
+.sub {
+  color: #aab9c9;
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+button, input {
+  font: inherit;
+  border-radius: 3px;
+}
+
+button {
+  background: #4ec0ca;
+  color: #092137;
+  border: 0;
+  padding: 10px 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: transparent;
+  border: 1px solid #62758c;
+  color: #f4f6f9;
+}
+
+label {
+  color: #bacbdd;
+  font-size: 12px;
+}
+
+input {
+  width: 92px;
+  background: #122943;
+  color: white;
+  padding: 9px 7px;
+  border: 1px solid #50647a;
+}
+
+.status {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #344a63;
+  background: #132943;
+  font-weight: 600;
+  min-height: 43px;
+}
+
+.arenas {
+  display: grid;
+  grid-template-columns: repeat(2, 420px);
+  justify-content: center;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.side {
+  width: 420px;
+  border: 1px solid #415b77;
+  background: #162b43;
+}
+
+.head {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-weight: 700;
+}
+
+.head span {
+  font-variant-numeric: tabular-nums;
+}
+
+iframe {
+  display: block;
+  border: 0;
+  width: 420px;
+  height: 525px;
+  background: #4ec0ca;
+  pointer-events: none;
+}
+
+.result {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #4ec0ca;
+  text-align: center;
+  background: #122c43;
+}
+
+.result strong {
+  display: block;
+  font-size: 25px;
+  margin-bottom: 5px;
+}
+
+.result[hidden] { display: none; }
+
+.help {
+  color: #aab9c9;
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+@media(max-width:880px) {
+  .arenas { justify-content: start; }
+}
+</style>
+</head>
+
+<body>
+<div class="shell">
+
+  <header>
+    <div>
+      <h1>FLOPPY BIRD // DUEL</h1>
+      <p class="sub">
+        Human vs bot · original nebez game engine
+      </p>
+    </div>
+
+    <div class="controls">
+      <label for="seed">PIPE SEED</label>
+      <input id="seed" type="number" value="12345">
+
+      <button id="start" disabled>Loading...</button>
+      <button id="restart" class="secondary">
+        Restart
+      </button>
+    </div>
+  </header>
+
+  <div class="status" id="status" role="status">
+    Loading both game screens...
+  </div>
+
+  <div class="arenas">
+
+    <section class="side">
+      <div class="head">
+        <span>YOU 🕹️</span>
+        <span id="humanScore">0</span>
+      </div>
+      <iframe
+        id="human"
+        title="Human game"
+        src="index.html?duel=human">
+      </iframe>
+    </section>
+
+    <section class="side">
+      <div class="head">
+        <span>BOT 🤖</span>
+        <span id="botScore">0</span>
+      </div>
+      <iframe
+        id="bot"
+        title="Bot game"
+        src="index.html?duel=bot">
+      </iframe>
+    </section>
+
+  </div>
+
+  <div id="result" class="result" hidden>
+    <strong id="winner"></strong>
+    <span id="details"></span>
+  </div>
+
+  <p class="help">
+    Start the duel, then press SPACE or click/tap the
+    left game to flap. Same pipe heights. First crash loses.
+  </p>
+
+</div>
+
+<script>
+(() => {
+  const humanFrame = document.getElementById("human");
+  const botFrame = document.getElementById("bot");
+
+  const startBtn = document.getElementById("start");
+  const restartBtn = document.getElementById("restart");
+
+  const statusEl = document.getElementById("status");
+  const resultEl = document.getElementById("result");
+
+  const humanScoreEl =
+    document.getElementById("humanScore");
+
+  const botScoreEl =
+    document.getElementById("botScore");
+
+  const seedEl = document.getElementById("seed");
+
+  let running = false;
+  let finished = false;
+  let ready = false;
+  let lastBotFlap = 0;
+  let loadStarted = performance.now();
+
+  // Access the original game inside an iframe.
+  function getGame(frame) {
+    try {
+      return frame.contentWindow;
+    } catch {
+      return null;
+    }
+  }
+
+  // Check that nebez's original main.js loaded.
+  function isReady(w) {
+    return !!(
+      w &&
+      w.states &&
+      w.$ &&
+      w.currentstate === w.states.SplashScreen &&
+      typeof w.startGame === "function" &&
+      typeof w.playerJump === "function"
+    );
+  }
+
+  // Same random generator = same pipe sequence.
+  function seededRandom(seed) {
+    let state = seed >>> 0;
+
+    return function() {
+      state = (
+        Math.imul(1664525, state) + 1013904223
+      ) >>> 0;
+
+      return state / 4294967296;
+    };
+  }
+
+  // Freeze a game when the duel is over.
+  function stopGame(w) {
+    if (!w) return;
+
+    w.clearInterval(w.loopGameloop);
+    w.clearInterval(w.loopPipeloop);
+
+    w.loopGameloop = null;
+    w.loopPipeloop = null;
+
+    w.$(".animated")
+      .css("animation-play-state", "paused")
+      .css("-webkit-animation-play-state", "paused");
+  }
+
+  // Human control.
+  function flapHuman() {
+    const h = getGame(humanFrame);
+
+    if (
+      running &&
+      h &&
+      h.currentstate === h.states.GameScreen
+    ) {
+      h.playerJump();
+    }
+  }
+
+  // Simple autonomous bot.
+  // Uses the original game's bird and pipe positions.
+  function steerBot(now, b) {
+    if (
+      !running ||
+      b.currentstate !== b.states.GameScreen
+    ) return;
+
+    let target = 190;
+    const next = b.pipes && b.pipes[0];
+
+    if (next && next.length) {
+      const pipe = next[0];
+      const upper = pipe.querySelector(".pipe_upper");
+      const bird = b.document.getElementById("player");
+
+      if (upper && bird) {
+        const distance =
+          pipe.getBoundingClientRect().left -
+          bird.getBoundingClientRect().right;
+
+        if (distance < 290) {
+          target =
+            upper.getBoundingClientRect().height +
+            b.pipeheight * 0.48;
+        }
+      }
+    }
+
+    // Predict where the bird will be shortly.
+    const lookahead = 12;
+
+    const futureY =
+      b.position +
+      12 +
+      b.velocity * lookahead +
+      b.gravity * lookahead * (lookahead + 1) / 2;
+
+    // Jump only when necessary.
+    if (
+      futureY > target + 8 &&
+      b.velocity > -2.0 &&
+      now - lastBotFlap > 135
+    ) {
+      b.playerJump();
+      lastBotFlap = now;
+    }
+  }
+
+  // Winner detection.
+  function endDuel(hDead, bDead, h, b) {
+    running = false;
+    finished = true;
+
+    humanFrame.style.pointerEvents = "none";
+
+    stopGame(h);
+    stopGame(b);
+
+    let name;
+
+    if (hDead && bDead) {
+      name = "IT'S A TIE!";
+    } else if (hDead) {
+      name = "BOT WINS 🤖";
+    } else {
+      name = "YOU WIN 🏆";
+    }
+
+    document.getElementById("winner").textContent = name;
+
+    document.getElementById("details").textContent =
+      "Your score: " + h.score +
+      " · Bot score: " + b.score;
+
+    resultEl.hidden = false;
+
+    statusEl.textContent =
+      "Race finished. Hit Restart for another match.";
+
+    startBtn.disabled = true;
+  }
+
+  // Watch both games.
+  function update(now) {
+    const h = getGame(humanFrame);
+    const b = getGame(botFrame);
+
+    // Wait until BOTH original games have loaded.
+    if (!ready) {
+      if (isReady(h) && isReady(b)) {
+        ready = true;
+
+        startBtn.disabled = false;
+        startBtn.textContent = "Start duel";
+
+        statusEl.textContent =
+          "Both games ready. Start when you are!";
+      } else if (now - loadStarted > 9000) {
+        statusEl.textContent =
+          "Games didn't load. Check index.html and " +
+          "the browser Console for errors.";
+      }
+    }
+
+    if (!running || !h || !b) return;
+
+    humanScoreEl.textContent = h.score || 0;
+    botScoreEl.textContent = b.score || 0;
+
+    const hDead =
+      h.currentstate === h.states.ScoreScreen;
+
+    const bDead =
+      b.currentstate === b.states.ScoreScreen;
+
+    if (hDead || bDead) {
+      endDuel(hDead, bDead, h, b);
+      return;
+    }
+
+    steerBot(now, b);
+  }
+
+  // Start BOTH games together.
+  function startDuel() {
+    const h = getGame(humanFrame);
+    const b = getGame(botFrame);
+
+    if (
+      !ready ||
+      running ||
+      finished ||
+      !isReady(h) ||
+      !isReady(b)
+    ) return;
+
+    const rawSeed = Number(seedEl.value);
+
+    const seed = Number.isFinite(rawSeed)
+      ? rawSeed >>> 0
+      : 12345;
+
+    // Each iframe has its own Math.random.
+    h.Math.random = seededRandom(seed);
+    b.Math.random = seededRandom(seed);
+
+    // Mute the bot's sounds.
+    try {
+      b.buzz.all().setVolume(0);
+    } catch {}
+
+    lastBotFlap = performance.now();
+
+    humanScoreEl.textContent = "0";
+    botScoreEl.textContent = "0";
+
+    resultEl.hidden = true;
+
+    // Run nebez's actual startGame() in each frame.
+    h.startGame();
+    b.startGame();
+
+    running = true;
+
+    humanFrame.style.pointerEvents = "auto";
+
+    startBtn.disabled = true;
+    seedEl.disabled = true;
+
+    statusEl.textContent =
+      "RACING! Space/click = flap. First crash loses.";
+  }
+
+  // Rematch: reload both original games.
+  function restart() {
+    running = false;
+    finished = false;
+    ready = false;
+
+    humanFrame.style.pointerEvents = "none";
+
+    humanScoreEl.textContent = "0";
+    botScoreEl.textContent = "0";
+
+    seedEl.disabled = false;
+
+    startBtn.disabled = true;
+    startBtn.textContent = "Loading...";
+
+    resultEl.hidden = true;
+
+    statusEl.textContent =
+      "Reloading both game screens...";
+
+    loadStarted = performance.now();
+
+    const stamp = Date.now();
+
+    humanFrame.src =
+      "index.html?duel=human&reload=" + stamp;
+
+    botFrame.src =
+      "index.html?duel=bot&reload=" + stamp;
+  }
+
+  startBtn.addEventListener("click", startDuel);
+  restartBtn.addEventListener("click", restart);
+
+  // SPACE works when the duel page has focus.
+  // When the human iframe has focus, nebez's own
+  // keyboard handler controls the bird.
+  window.addEventListener("keydown", e => {
+    if (
+      e.code === "Space" &&
+      !e.repeat &&
+      document.activeElement !== seedEl
+    ) {
+      e.preventDefault();
+      flapHuman();
+    }
+  });
+
+  // Check game states around 33 times per second.
+  setInterval(() => {
+    update(performance.now());
+  }, 30);
+
+})();
+</script>
+</body>
+</html>

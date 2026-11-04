@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flappy AI Training V3</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #101827;
+            color: #f4f6f9;
+            font-family: Consolas, monospace;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #52e5a7;
+        }
+
+        p {
+            line-height: 1.5;
+        }
+
+        button {
+            padding: 12px 18px;
+            margin: 5px;
+            background: #183d57;
+            color: white;
+            border: 1px solid #52e5a7;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background: #245a72;
+        }
+
+        button.active {
+            background: #207a60;
+        }
+
+        .controls {
+            margin: 18px 0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(140px, 1fr)
+            );
+            gap: 12px;
+        }
+
+        .stat {
+            padding: 15px;
+            background: #1b2940;
+        }
+
+        .stat p {
+            color: #b1c1d5;
+            margin: 0 0 10px;
+        }
+
+        .number {
+            font-size: 26px;
+            color: #52e5a7;
+        }
+
+        .panel {
+            padding: 16px;
+            margin-top: 20px;
+            background: #1b2940;
+        }
+
+        .game-layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 20px;
+        }
+
+        #trainingCanvas {
+            display: block;
+            width: 100%;
+            max-width: 420px;
+            height: auto;
+            border: 2px solid #52e5a7;
+            background: #4ec0ca;
+            image-rendering: pixelated;
+        }
+
+        #log {
+            height: 300px;
+            overflow-y: auto;
+            background: #060b13;
+            padding: 15px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        #progress {
+            width: 100%;
+            height: 12px;
+            background: #08121f;
+        }
+
+        #bar {
+            height: 100%;
+            width: 0%;
+            background: #52e5a7;
+        }
+
+        .hint {
+            color: #a3b4c8;
+        }
+
+        @media (max-width: 800px) {
+            .game-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>FLAPPY AI TRAINING V3</h1>
+        <p>100 Birds | Neuroevolution | Live Spectator</p>
+
+        <div class="controls">
+            <button id="start">START</button>
+            <button id="pause">PAUSE</button>
+            <button id="watch">WATCH MODE</button>
+            <button id="turbo">TURBO MODE</button>
+            <button id="export">EXPORT BRAIN</button>
+            <button id="reset">RESET</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <p>Generation</p>
+                <div class="number" id="generation">1</div>
+            </div>
+
+            <div class="stat">
+                <p>Alive</p>
+                <div class="number" id="alive">100</div>
+            </div>
+
+            <div class="stat">
+                <p>Best Score</p>
+                <div class="number" id="best">0</div>
+            </div>
+
+            <div class="stat">
+                <p>Current Leader</p>
+                <div class="number" id="leader">0</div>
+            </div>
+
+            <div class="stat">
+                <p>Frames Simulated</p>
+                <div class="number" id="frames">0</div>
+            </div>
+
+            <div class="stat">
+                <p>Seed</p>
+                <div class="number" id="seed">12345</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>LIVE AI GAMEPLAY</h2>
+
+            <div class="game-layout">
+                <canvas
+                    id="trainingCanvas"
+                    width="420"
+                    height="420">
+                </canvas>
+
+                <div>
+                    <h3 id="mode">Watch Mode</h3>
+                    <p id="spectator">100 birds ready.</p>
+
+                    <p>
+                        Yellow: surviving birds
+                        <br>
+                        Pink: current leading bird
+                        <br>
+                        Green: obstacles
+                    </p>
+
+                    <p id="status">Ready to train.</p>
+
+                    <h3>Generation Progress</h3>
+                    <div id="progress">
+                        <div id="bar"></div>
+                    </div>
+
+                    <p class="hint">
+                        Every bird in a generation faces
+                        the same seeded pipes.
+                        The seed changes every five
+                        generations.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>TRAINING LOG</h2>
+            <div id="log"></div>
+        </div>
+
+        <p class="hint">
+            Models are automatically saved to browser
+            storage. Export JSON for a permanent backup.
+        </p>
+    </main>
+
+    <script src="../shared/engine.js"></script>
+    <script src="train.js"></script>
+</body>
+</html>

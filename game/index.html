@@ -1,0 +1,1359 @@
+﻿
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Floppy Bird V7 — Duel + Champion Speedrun</title>
+
+<link rel="stylesheet" href="css/reset.css">
+<link rel="stylesheet" href="css/main.css">
+
+<style>
+html,body {
+  width:100%;
+  height:100%;
+  margin:0;
+  overflow:hidden;
+  background:#4ec0ca;
+}
+#gamecontainer {
+  width:100%;
+  height:100%;
+  min-height:525px;
+}
+#gamescreen {
+  width:100%;
+  height:100%;
+  overflow:hidden;
+}
+#flyarea {
+  width:100%;
+  height:420px;
+  overflow:visible;
+}
+.lane {
+  position:absolute;
+  top:0;
+  width:50%;
+  height:100%;
+  overflow:hidden;
+}
+#humanLane {left:0}
+#aiLane {left:50%}
+
+#splitLine {
+  position:absolute;
+  z-index:550;
+  top:0;
+  bottom:0;
+  left:50%;
+  width:3px;
+  transform:translateX(-50%);
+  background:#102a41;
+  pointer-events:none;
+}
+.bird.duel-bird {
+  position:absolute;
+  top:180px;
+  left:60px;
+  z-index:30;
+  will-change:top,transform;
+}
+.duel-pair {
+  position:absolute;
+  left:0;
+  top:0;
+  width:52px;
+  height:100%;
+  z-index:15;
+  pointer-events:none;
+  will-change:transform;
+}
+.duel-upper,.duel-lower {
+  position:absolute;
+  left:0;
+  width:52px;
+  background:url("assets/pipe.png") center repeat-y;
+}
+.duel-upper {top:0}
+.duel-lower {bottom:0}
+.duel-upper::after,.duel-lower::after {
+  content:"";
+  position:absolute;
+  left:0;
+  width:52px;
+  height:26px;
+}
+.duel-upper::after {
+  bottom:0;
+  background:url("assets/pipe-down.png") no-repeat;
+}
+.duel-lower::after {
+  top:0;
+  background:url("assets/pipe-up.png") no-repeat;
+}
+.readyArt {
+  position:absolute;
+  top:75px;
+  left:min(65px,6vw);
+  width:188px;
+  height:170px;
+  background:url("assets/splash.png") no-repeat;
+  z-index:25;
+  pointer-events:none;
+}
+[hidden] {display:none!important}
+
+.hud {
+  position:absolute;
+  z-index:600;
+  top:12px;
+  width:50%;
+  text-align:center;
+  color:white;
+  pointer-events:none;
+  font:bold clamp(16px,2vw,28px) monospace;
+  text-shadow:2px 2px #20435a;
+}
+#humanHud {left:0}
+#aiHud {left:50%}
+.hud .score {
+  font-size:clamp(27px,3vw,42px);
+  margin-top:3px;
+}
+#message {
+  position:absolute;
+  z-index:900;
+  top:36%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:min(90%,470px);
+  color:white;
+  text-align:center;
+  text-shadow:2px 3px #193d55;
+  font:bold 18px monospace;
+  pointer-events:none;
+}
+#message strong {
+  display:block;
+  font-size:clamp(23px,3vw,40px);
+}
+#message span {
+  display:block;
+  font-size:clamp(12px,1.3vw,17px);
+  margin-top:10px;
+}
+#hint {
+  position:absolute;
+  z-index:700;
+  bottom:calc(20% + 9px);
+  left:10px;
+  color:white;
+  font:bold 12px monospace;
+  text-shadow:1px 2px #193d55;
+  pointer-events:none;
+}
+#speedStats {
+  position:absolute;
+  z-index:700;
+  top:92px;
+  left:16px;
+  max-width:min(46vw,410px);
+  background:rgba(11,25,44,.80);
+  color:white;
+  padding:11px;
+  font:13px/1.7 monospace;
+  border:1px solid rgba(255,255,255,.4);
+  pointer-events:none;
+}
+#speedStats b {
+  font-size:17px;
+}
+#controlDeck {
+  position:absolute;
+  top:12px;
+  right:14px;
+  z-index:1000;
+  display:grid;
+  gap:7px;
+  width:min(310px,42vw);
+  padding:11px;
+  background:rgba(11,25,44,.91);
+  color:white;
+  border:1px solid rgba(255,255,255,.55);
+  font:13px monospace;
+  box-shadow:2px 2px 0 rgba(0,0,0,.2);
+}
+#controlDeck .line {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  justify-content:space-between;
+}
+#controlDeck label {font-weight:bold}
+#controlDeck select,
+#controlDeck input[type=number] {
+  min-width:0;
+  background:#173551;
+  border:1px solid #90afc5;
+  color:white;
+  padding:5px;
+  font:inherit;
+}
+#modeSelect {flex:1}
+#speedNumber {width:87px}
+#seedInput {width:110px}
+#speedSlider {
+  width:100%;
+  accent-color:#4ec0ca;
+}
+#controlDeck button {
+  background:#4ec0ca;
+  border:1px solid white;
+  color:#0b192c;
+  padding:7px 10px;
+  font:700 13px monospace;
+  cursor:pointer;
+  flex:1;
+}
+#controlDeck .secondary {
+  background:#173551;
+  color:white;
+}
+#controlDeck input[type=checkbox] {
+  accent-color:#4ec0ca;
+}
+#speedControls {
+  display:grid;
+  gap:6px;
+}
+#speedControls[hidden] {display:none}
+#speedActual {
+  font-size:11px;
+  color:#bceef2;
+}
+.paused .animated,
+.paused .bird {
+  animation-play-state:paused!important;
+  -webkit-animation-play-state:paused!important;
+}
+@media(max-width:650px) {
+  #controlDeck {
+    width:min(220px,51vw);
+    right:4px;
+    top:4px;
+    padding:6px;
+    gap:4px;
+    font-size:11px;
+  }
+  #controlDeck button {
+    font-size:11px;
+    padding:6px 4px;
+  }
+  #speedStats {
+    top:105px;
+    left:4px;
+    max-width:48vw;
+    font-size:11px;
+    padding:7px;
+  }
+  .readyArt {
+    transform:scale(.65);
+    transform-origin:top left;
+  }
+  #message {top:42%}
+}
+</style>
+</head>
+
+<body>
+<div id="gamecontainer">
+  <div id="gamescreen">
+
+    <!-- ONE ORIGINAL FULL-WIDTH BACKGROUND -->
+    <div id="sky" class="animated">
+      <div id="flyarea">
+        <div id="ceiling" class="animated"></div>
+
+        <!-- HUMAN SIDE -->
+        <div class="lane" id="humanLane">
+          <div class="bird duel-bird"
+               id="humanBird"></div>
+          <div class="readyArt"></div>
+        </div>
+
+        <!-- CHAMPION SIDE -->
+        <div class="lane" id="aiLane">
+          <div class="bird duel-bird"
+               id="aiBird"></div>
+          <div class="readyArt"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="land" class="animated"></div>
+    <div id="splitLine"></div>
+
+    <div id="humanHud" class="hud">
+      HUMAN
+      <div id="humanScore" class="score">0</div>
+    </div>
+
+    <div id="aiHud" class="hud">
+      <span id="aiName">CHAMPION AI</span>
+      <div id="aiScore" class="score">0</div>
+    </div>
+
+    <div id="message">
+      <strong>HUMAN VS CHAMPION</strong>
+      <span>PRESS SPACE OR START</span>
+    </div>
+
+    <!-- SPEEDRUN LIVE STATS -->
+    <div id="speedStats" hidden>
+      <div>
+        BEST OBSERVED:
+        <b id="bestScore">0</b>
+      </div>
+      <div>RUNS: <span id="runCount">0</span></div>
+      <div>SEED: <span id="currentSeed">12345</span></div>
+      <div>LAST: <span id="lastScore">—</span></div>
+      <div>SIMULATED: <span id="simTime">0.0s</span></div>
+    </div>
+
+    <div id="hint">
+      SPACE / LEFT-CLICK = FLAP · K = MODE
+    </div>
+
+    <!-- SMALL IN-GAME CONTROL PANEL -->
+    <div id="controlDeck">
+
+      <div class="line">
+        <label for="modeSelect">MODE [K]</label>
+        <select id="modeSelect">
+          <option value="duel">Human vs AI</option>
+          <option value="speedrun">AI Speedrun</option>
+        </select>
+      </div>
+
+      <div id="speedControls" hidden>
+
+        <div class="line">
+          <label for="speedNumber">TARGET SPEED</label>
+          <input
+            id="speedNumber"
+            type="number"
+            min="0.1"
+            max="100000"
+            step="any"
+            value="100"
+          >
+          ×
+        </div>
+
+        <input
+          id="speedSlider"
+          type="range"
+          min="0"
+          max="14"
+          value="8"
+          step="1"
+          aria-label="Speed preset"
+        >
+
+        <div class="line">
+          <label for="seedInput">START SEED</label>
+          <input
+            id="seedInput"
+            type="number"
+            min="0"
+            max="4294967295"
+            step="1"
+            value="12345"
+          >
+        </div>
+
+        <label>
+          <input
+            type="checkbox"
+            id="autoRetry"
+            checked
+          >
+          Auto-retry with new seeds
+        </label>
+
+        <div id="speedActual">
+          Actual throughput: —
+        </div>
+
+      </div>
+
+      <div class="line">
+        <button id="playButton" type="button">
+          START
+        </button>
+
+        <button
+          id="resetButton"
+          class="secondary"
+          type="button"
+        >
+          RESET
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- YOUR EXISTING OFFLINE CHAMPION BRAIN -->
+<script src="js/champion-brain.js"></script>
+
+<script>
+(() => {
+  "use strict";
+
+  // EXACT TRAINING-ENGINE PHYSICS VALUES.
+  const H = 420;
+  const GAP = 90;
+  const PW = 52;
+  const SPEED = 1000 / 450;
+  const INTERVAL = 84;
+
+  const GRAVITY = 0.25;
+  const JUMP = -4.6;
+  const BIRD_W = 34;
+  const BIRD_H = 24;
+  const COOLDOWN = 9;
+
+  const STEP_MS = 1000 / 60;
+
+  const $ = id => document.getElementById(id);
+
+  const lanes = [
+    $("humanLane"),
+    $("aiLane")
+  ];
+
+  const birds = [
+    $("humanBird"),
+    $("aiBird")
+  ];
+
+  const scores = [
+    $("humanScore"),
+    $("aiScore")
+  ];
+
+  const screens = $("gamescreen");
+  const container = $("gamecontainer");
+
+  const modeSelect = $("modeSelect");
+  const speedControls = $("speedControls");
+  const speedNumber = $("speedNumber");
+  const speedSlider = $("speedSlider");
+  const speedActual = $("speedActual");
+  const seedInput = $("seedInput");
+  const autoRetry = $("autoRetry");
+  const playButton = $("playButton");
+
+  const speedPresets = [
+    0.25, 0.5, 1, 2, 5,
+    10, 20, 50, 100, 250,
+    500, 1000, 2500, 5000, 10000
+  ];
+
+  let gameMode = "duel";
+  let phase = "ready";
+
+  let players = [];
+  let pipes = [];
+
+  let frame = 0;
+  let rngState = 12345;
+  let nextPipeId = 1;
+  let birdX = 60;
+
+  let raf = 0;
+  let lastReal = 0;
+  let frameCredit = 0;
+  let pendingHumanJump = false;
+
+  let speed = 100;
+  let runs = 0;
+
+  let startSeed = 12345;
+  let activeSeed = 12345;
+
+  let lastScore = null;
+  let best = {score: 0, seed: null};
+
+  let measuredSteps = 0;
+  let measureAt = 0;
+  let measuredSpeed = 0;
+
+  // Pipe graphics are separate from physics.
+  // At 10,000x, we simulate thousands of steps
+  // but only redraw the screen once per display frame.
+  const visualPipes = new Map();
+
+  const SAVE_KEY = "flappy-v7-speedrun-best";
+
+  // LOAD PREVIOUS BEST
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem(SAVE_KEY)
+    );
+
+    if (
+      saved &&
+      Number.isFinite(saved.score) &&
+      Number.isFinite(saved.seed)
+    ) {
+      best = saved;
+    }
+  } catch (_) {
+    // Storage may be restricted on file:// URLs.
+  }
+
+  function show(title, detail) {
+    const box = $("message");
+    box.textContent = "";
+
+    const a = document.createElement("strong");
+    a.textContent = title;
+
+    const b = document.createElement("span");
+    b.textContent = detail;
+
+    box.append(a, b);
+    box.hidden = false;
+  }
+
+  // DETERMINISTIC PIPE RANDOMIZER
+  function random() {
+    rngState = (
+      Math.imul(rngState, 1664525) + 1013904223
+    ) >>> 0;
+
+    return rngState / 4294967296;
+  }
+
+  function fitBird() {
+    const width = gameMode === "duel"
+      ? lanes[0].clientWidth
+      : lanes[1].clientWidth;
+
+    birdX = Math.min(
+      60,
+      Math.max(5, width - BIRD_W - 5)
+    );
+
+    birds.forEach(el => {
+      el.style.left = birdX + "px";
+    });
+  }
+
+  function clearVisualPipes() {
+    for (const el of visualPipes.values()) {
+      el.remove();
+    }
+
+    visualPipes.clear();
+  }
+
+  // RESET SIMULATION WITH A GIVEN PIPE SEED
+  function newWorld(seed) {
+    clearVisualPipes();
+
+    activeSeed = seed >>> 0;
+    rngState = activeSeed;
+
+    frame = 0;
+    nextPipeId = 1;
+    pipes = [];
+
+    players = [0, 1].map(() => ({
+      y: 180,
+      velocity: 0,
+      alive: true,
+      score: 0,
+      cooldown: 0,
+      lastPassedPipeId: 0
+    }));
+  }
+
+  // MODE SWITCHER
+  function enterMode(mode) {
+    if (raf) {
+      cancelAnimationFrame(raf);
+    }
+
+    raf = 0;
+    lastReal = 0;
+    frameCredit = 0;
+
+    measuredSteps = 0;
+    measuredSpeed = 0;
+
+    gameMode = mode;
+    phase = "ready";
+    modeSelect.value = mode;
+
+    container.classList.remove("paused");
+
+    // Duel = two halves.
+    // Speedrun = the AI gets the entire arena.
+    lanes[0].hidden = mode === "speedrun";
+
+    lanes[1].style.left =
+      mode === "speedrun" ? "0" : "50%";
+
+    lanes[1].style.width =
+      mode === "speedrun" ? "100%" : "50%";
+
+    $("splitLine").hidden = mode === "speedrun";
+    $("humanHud").hidden = mode === "speedrun";
+
+    $("aiHud").style.left =
+      mode === "speedrun" ? "0" : "50%";
+
+    $("aiHud").style.width =
+      mode === "speedrun" ? "100%" : "50%";
+
+    $("aiName").textContent =
+      mode === "speedrun"
+        ? "CHAMPION SPEEDRUN"
+        : "CHAMPION AI";
+
+    $("speedStats").hidden = mode !== "speedrun";
+    speedControls.hidden = mode !== "speedrun";
+
+    $("hint").textContent =
+      mode === "speedrun"
+        ? "K = MODE · P = PAUSE/RESUME"
+        : "SPACE / LEFT-CLICK = FLAP · K = MODE";
+
+    runs = 0;
+    lastScore = null;
+
+    newWorld(12345);
+    fitBird();
+
+    birds.forEach(b => {
+      b.style.top = "180px";
+      b.style.transform = "rotate(0deg)";
+      b.style.filter = "";
+    });
+
+    document.querySelectorAll(".readyArt")
+      .forEach(a => {
+        a.hidden = false;
+      });
+
+    scores.forEach(el => {
+      el.textContent = "0";
+    });
+
+    playButton.textContent = "START";
+
+    measureAt = performance.now();
+
+    show(
+      mode === "speedrun"
+        ? "CHAMPION SPEEDRUN"
+        : "HUMAN VS CHAMPION",
+
+      mode === "speedrun"
+        ? "SET SPEED AND PRESS START"
+        : "PRESS SPACE OR START"
+    );
+
+    renderStats();
+  }
+
+  // ONE PIPE SEQUENCE, SHARED BY BOTH PLAYERS
+  function spawnPipe() {
+    const top = Math.floor(
+      random() * (H - GAP - 160)
+    ) + 80;
+
+    pipes.push({
+      id: nextPipeId++,
+      x: 360,
+      top: top,
+      bottom: top + GAP
+    });
+  }
+
+  function nextPipe() {
+    return pipes.find(p =>
+      p.x + PW >= birdX
+    ) || null;
+  }
+
+  function flap(index) {
+    const bird = players[index];
+
+    if (!bird.alive || bird.cooldown > 0) {
+      return;
+    }
+
+    bird.velocity = JUMP;
+    bird.cooldown = COOLDOWN;
+  }
+
+  // PACKAGED CHAMPION NEURAL NETWORK
+  function aiAction() {
+    const bird = players[1];
+    const pipe = nextPipe();
+
+    return (
+      bird.alive &&
+      bird.cooldown === 0 &&
+      pipe &&
+      window.FlappyChampion.shouldFlap({
+        pipeTop: pipe.top,
+        pipeX: pipe.x,
+        birdX: birdX,
+        birdY: bird.y,
+        velocity: bird.velocity,
+        gap: GAP,
+        height: H
+      })
+    );
+  }
+
+  function updateBird(bird) {
+    if (!bird.alive) {
+      return;
+    }
+
+    if (bird.cooldown > 0) {
+      bird.cooldown--;
+    }
+
+    bird.velocity += GRAVITY;
+    bird.y += bird.velocity;
+
+    if (bird.y < 0) {
+      bird.y = 0;
+
+      if (bird.velocity < 0) {
+        bird.velocity = 0;
+      }
+    }
+
+    if (bird.y + BIRD_H >= H) {
+      bird.alive = false;
+      return;
+    }
+
+    for (const pipe of pipes) {
+      const overlap =
+        birdX + BIRD_W > pipe.x &&
+        birdX < pipe.x + PW;
+
+      if (
+        overlap &&
+        (
+          bird.y < pipe.top ||
+          bird.y + BIRD_H > pipe.bottom
+        )
+      ) {
+        bird.alive = false;
+        return;
+      }
+    }
+
+    // Score once for every passed pipe.
+    for (const pipe of pipes) {
+      if (
+        pipe.id > bird.lastPassedPipeId &&
+        pipe.x + PW <= birdX
+      ) {
+        bird.score++;
+        bird.lastPassedPipeId = pipe.id;
+      }
+    }
+  }
+
+  // REMEMBER HIGHEST OBSERVED SCORE
+  function recordRun() {
+    const score = players[1].score;
+
+    lastScore = score;
+
+    if (
+      score > best.score ||
+      best.seed === null
+    ) {
+      best = {
+        score: score,
+        seed: activeSeed
+      };
+
+      try {
+        localStorage.setItem(
+          SAVE_KEY,
+          JSON.stringify(best)
+        );
+      } catch (_) {}
+    }
+  }
+
+  // ONE SIMULATION STEP
+  function step() {
+
+    if (
+      gameMode === "duel" &&
+      pendingHumanJump
+    ) {
+      flap(0);
+      pendingHumanJump = false;
+    }
+
+    if (aiAction()) {
+      flap(1);
+    }
+
+    frame++;
+
+    if ((frame - 1) % INTERVAL === 0) {
+      spawnPipe();
+    }
+
+    // Advance each pipe with original physics.
+    for (const pipe of pipes) {
+      pipe.x -= SPEED;
+    }
+
+    pipes = pipes.filter(pipe =>
+      pipe.x + PW >= -60
+    );
+
+    if (gameMode === "duel") {
+      updateBird(players[0]);
+    }
+
+    updateBird(players[1]);
+
+    if (gameMode === "duel") {
+      // FIRST PLAYER TO DIE LOSES
+      if (
+        !players[0].alive ||
+        !players[1].alive
+      ) {
+        phase = "ended";
+        container.classList.add("paused");
+
+        const h = players[0];
+        const b = players[1];
+
+        const winner =
+          !h.alive && !b.alive
+            ? "DRAW!"
+            : !h.alive
+              ? "AI WINS!"
+              : "YOU WIN!";
+
+        show(
+          winner,
+          `YOU ${h.score} — CHAMPION ${b.score}`
+        );
+
+        playButton.textContent = "REMATCH";
+      }
+
+    } else if (!players[1].alive) {
+
+      // SPEEDRUN: AI CRASHED
+      recordRun();
+
+      if (autoRetry.checked) {
+
+        // New pipe seed on every attempt.
+        runs++;
+
+        newWorld(
+          (startSeed + runs - 1) >>> 0
+        );
+
+      } else {
+        phase = "ended";
+        container.classList.add("paused");
+
+        show(
+          "AI CRASHED",
+          `SCORE ${lastScore} · BEST ${best.score} · SEED ${activeSeed}`
+        );
+
+        playButton.textContent = "RETRY";
+      }
+    }
+  }
+
+  // CREATE ORIGINAL NEBEZ PIPE GRAPHICS
+  function createVisual(pipe, laneIndex) {
+    const pair = document.createElement("div");
+    pair.className = "duel-pair";
+
+    const upper = document.createElement("div");
+    upper.className = "duel-upper";
+    upper.style.height = pipe.top + "px";
+
+    const lower = document.createElement("div");
+    lower.className = "duel-lower";
+    lower.style.height =
+      (H - pipe.bottom) + "px";
+
+    pair.append(upper, lower);
+    lanes[laneIndex].appendChild(pair);
+
+    return pair;
+  }
+
+  // REDRAW SCREEN ONLY ONCE PER BROWSER FRAME
+  function render() {
+    const activeLanes =
+      gameMode === "duel"
+        ? [0, 1]
+        : [1];
+
+    const seen = new Set();
+
+    for (const pipe of pipes) {
+      for (const laneIndex of activeLanes) {
+        const key =
+          `${laneIndex}:${pipe.id}`;
+
+        seen.add(key);
+
+        let el = visualPipes.get(key);
+
+        if (!el) {
+          el = createVisual(
+            pipe,
+            laneIndex
+          );
+
+          visualPipes.set(key, el);
+        }
+
+        el.style.transform =
+          `translate3d(${pipe.x}px,0,0)`;
+      }
+    }
+
+    // Remove old pipe sprites.
+    for (const [key, el] of visualPipes) {
+      if (!seen.has(key)) {
+        el.remove();
+        visualPipes.delete(key);
+      }
+    }
+
+    players.forEach((bird, i) => {
+      birds[i].style.top =
+        bird.y + "px";
+
+      birds[i].style.transform =
+        `rotate(${Math.min(90, bird.velocity * 9)}deg)`;
+
+      birds[i].style.filter =
+        bird.alive ? "" : "grayscale(1)";
+
+      scores[i].textContent =
+        bird.score;
+    });
+
+    renderStats();
+  }
+
+  function renderStats() {
+    if (gameMode !== "speedrun") {
+      return;
+    }
+
+    $("bestScore").textContent =
+      best.score +
+      (
+        best.seed !== null
+          ? ` (seed ${best.seed})`
+          : ""
+      );
+
+    $("runCount").textContent = runs;
+    $("currentSeed").textContent = activeSeed;
+
+    $("lastScore").textContent =
+      lastScore === null
+        ? "—"
+        : lastScore;
+
+    $("simTime").textContent =
+      (frame / 60).toFixed(1) + "s";
+
+    speedActual.textContent =
+      `Actual throughput: ~${measuredSpeed.toFixed(1)}× | Target: ${speed}×`;
+  }
+
+  // SPEED CONTROLLER
+  function frameLoop(now) {
+    if (phase !== "running") {
+      return;
+    }
+
+    const dt = Math.max(
+      0,
+      Math.min(now - lastReal, 100)
+    );
+
+    lastReal = now;
+
+    // A multiplier increases simulated game frames.
+    // It does NOT modify gravity, pipes, or the brain.
+    frameCredit +=
+      dt / STEP_MS *
+      (
+        gameMode === "speedrun"
+          ? speed
+          : 1
+      );
+
+    // Give each browser frame a limited CPU budget.
+    const deadline = performance.now() + 9;
+
+    let steps = 0;
+
+    while (
+      frameCredit >= 1 &&
+      phase === "running" &&
+      steps < 30000
+    ) {
+      step();
+
+      frameCredit--;
+      steps++;
+
+      // Check time occasionally to reduce overhead.
+      if (
+        (steps & 127) === 0 &&
+        performance.now() > deadline
+      ) {
+        break;
+      }
+    }
+
+    measuredSteps += steps;
+
+    // Estimate the achieved speed.
+    if (now - measureAt >= 500) {
+      measuredSpeed =
+        measuredSteps * STEP_MS /
+        (now - measureAt);
+
+      measuredSteps = 0;
+      measureAt = now;
+    }
+
+    // Never let an enormous backlog freeze the page.
+    frameCredit = Math.min(
+      frameCredit,
+      gameMode === "speedrun"
+        ? Math.max(2, speed * 3)
+        : 6
+    );
+
+    render();
+
+    if (phase === "running") {
+      raf = requestAnimationFrame(frameLoop);
+    }
+  }
+
+  // START A DUEL OR SPEEDRUN
+  function start() {
+
+    if (
+      !window.FlappyChampion ||
+      typeof window.FlappyChampion.shouldFlap
+        !== "function"
+    ) {
+      show(
+        "BRAIN MISSING",
+        "Keep game/js/champion-brain.js next to main.js."
+      );
+
+      return;
+    }
+
+    startSeed =
+      Number.isFinite(Number(seedInput.value))
+        ? Number(seedInput.value) >>> 0
+        : 12345;
+
+    runs = 1;
+    lastScore = null;
+
+    pendingHumanJump =
+      gameMode === "duel";
+
+    newWorld(
+      gameMode === "speedrun"
+        ? startSeed
+        : 12345
+    );
+
+    document.querySelectorAll(".readyArt")
+      .forEach(el => {
+        el.hidden = true;
+      });
+
+    container.classList.remove("paused");
+    $("message").hidden = true;
+
+    phase = "running";
+    playButton.textContent = "PAUSE";
+
+    lastReal = performance.now();
+    measureAt = lastReal;
+
+    measuredSteps = 0;
+    measuredSpeed = 0;
+    frameCredit = 0;
+
+    fitBird();
+    render();
+
+    raf = requestAnimationFrame(frameLoop);
+  }
+
+  // START / PAUSE / RESUME
+  function togglePlay() {
+
+    if (
+      phase === "ready" ||
+      phase === "ended"
+    ) {
+      start();
+      return;
+    }
+
+    if (phase === "running") {
+
+      phase = "paused";
+
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+
+      container.classList.add("paused");
+      playButton.textContent = "RESUME";
+
+      show(
+        "PAUSED",
+        gameMode === "speedrun"
+          ? `CURRENT SCORE ${players[1].score}`
+          : "PRESS P OR RESUME"
+      );
+
+    } else {
+
+      phase = "running";
+
+      container.classList.remove("paused");
+      $("message").hidden = true;
+
+      playButton.textContent = "PAUSE";
+
+      lastReal = performance.now();
+      measureAt = lastReal;
+
+      measuredSteps = 0;
+      frameCredit = 0;
+
+      raf = requestAnimationFrame(frameLoop);
+    }
+  }
+
+  // LIVE SPEED ADJUSTMENT
+  function setSpeed(value) {
+    const n = Number(value);
+
+    if (!Number.isFinite(n) || n <= 0) {
+      return;
+    }
+
+    speed = Math.max(
+      0.1,
+      Math.min(100000, n)
+    );
+
+    speedNumber.value = String(speed);
+
+    // Find the closest slider preset.
+    let nearest = 0;
+
+    for (
+      let i = 1;
+      i < speedPresets.length;
+      i++
+    ) {
+      const a = Math.abs(
+        Math.log(speedPresets[i] / speed)
+      );
+
+      const b = Math.abs(
+        Math.log(speedPresets[nearest] / speed)
+      );
+
+      if (a < b) {
+        nearest = i;
+      }
+    }
+
+    speedSlider.value = String(nearest);
+
+    renderStats();
+  }
+
+  // UI EVENTS
+  modeSelect.addEventListener(
+    "change",
+    () => enterMode(modeSelect.value)
+  );
+
+  speedSlider.addEventListener(
+    "input",
+    () => setSpeed(
+      speedPresets[Number(speedSlider.value)]
+    )
+  );
+
+  speedNumber.addEventListener(
+    "change",
+    () => setSpeed(speedNumber.value)
+  );
+
+  playButton.addEventListener(
+    "click",
+    togglePlay
+  );
+
+  $("resetButton").addEventListener(
+    "click",
+    () => enterMode(gameMode)
+  );
+
+  // KEYBOARD SHORTCUTS
+  window.addEventListener("keydown", e => {
+
+    const tag =
+      e.target && e.target.tagName;
+
+    // K = switch between DUEL and SPEEDRUN.
+    if (
+      e.code === "KeyK" &&
+      !e.repeat &&
+      tag !== "INPUT" &&
+      tag !== "TEXTAREA"
+    ) {
+      e.preventDefault();
+
+      enterMode(
+        gameMode === "duel"
+          ? "speedrun"
+          : "duel"
+      );
+
+      return;
+    }
+
+    // Don't hijack typing inside inputs.
+    if (
+      tag === "INPUT" ||
+      tag === "SELECT" ||
+      tag === "TEXTAREA"
+    ) {
+      return;
+    }
+
+    // P = pause / resume.
+    if (
+      e.code === "KeyP" &&
+      !e.repeat
+    ) {
+      e.preventDefault();
+      togglePlay();
+    }
+
+    // SPACE controls the human in DUEL mode.
+    else if (
+      e.code === "Space" &&
+      !e.repeat &&
+      gameMode === "duel"
+    ) {
+      e.preventDefault();
+
+      if (
+        phase === "ready" ||
+        phase === "ended"
+      ) {
+        start();
+      } else if (phase === "running") {
+        pendingHumanJump = true;
+      }
+    }
+  });
+
+  // CLICK LEFT SIDE = HUMAN JUMP
+  screens.addEventListener(
+    "pointerdown",
+    e => {
+
+      if (
+        e.target.closest("#controlDeck")
+      ) {
+        return;
+      }
+
+      if (
+        gameMode === "duel" &&
+        e.clientX <
+          screens.getBoundingClientRect().left +
+          screens.clientWidth / 2
+      ) {
+        if (
+          phase === "ready" ||
+          phase === "ended"
+        ) {
+          start();
+        } else if (phase === "running") {
+          pendingHumanJump = true;
+        }
+      }
+    }
+  );
+
+  window.addEventListener(
+    "resize",
+    fitBird
+  );
+
+  // INITIALIZE
+  enterMode("duel");
+
+  if (!window.FlappyChampion) {
+    show(
+      "BRAIN FILE MISSING",
+      "Expected game/js/champion-brain.js"
+    );
+  }
+
+})();
+</script>
+</body>
+</html>
