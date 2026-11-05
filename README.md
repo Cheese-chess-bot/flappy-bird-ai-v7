@@ -24,8 +24,8 @@ A Flappy Bird project featuring a trained neural-network opponent.
 ## Play
 
 Open game/index.html in a browser.
-or use
-## Train
+or use this link
 
+## Train
 Open AI/train.html using a local development server.
 
